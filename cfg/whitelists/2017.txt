@@ -1,0 +1,4 @@
+"item_whitelist"
+{
+	"unlisted_items_default_to"		"1"
+}
