@@ -14,7 +14,8 @@ Handle hCreateDroppedWeapon;
 Handle hInitDroppedWeapon;
 Handle hPickupWeaponFromOther;
 
-ConVar year;
+ConVar gCurrentYear;
+ConVar gMpTournamentWhitelist;
 
 ArrayList gBlockedQualities;
 ArrayList gBlockedAttributes;
@@ -86,10 +87,25 @@ public void OnPluginStart() {
 	HookEvent("player_spawn", Hook_PlayerSpawn, EventHookMode_Post);
 	HookEvent("post_inventory_application", Hook_PostInventoryApplication, EventHookMode_Post);
 
-	year = CreateConVar("sm_year", "2019", "Current year", 0, true, 2007.0, true, 2019.0);
-	year.AddChangeHook(YearChanged);
+	gMpTournamentWhitelist = FindConVar("mp_tournament_whitelist");
+	gCurrentYear = CreateConVar("sm_current_year", "2019", "Current year", 0, true, 2007.0, true, 2019.0);
+	gCurrentYear.AddChangeHook(YearChanged);
 
-	YearChanged(year, "", "");
+	YearChanged(gCurrentYear, "", "");
+
+	RegAdminCmd("sm_year", Command_Year, ADMFLAG_GENERIC);
+}
+
+public Action Command_Year(int client, int args) {
+	char year[8];
+
+	GetCmdArg(1, year, sizeof(year));
+
+	gCurrentYear.IntValue = StringToInt(year);
+
+	ReplyToCommand(client, "[SM] Year set to %s", year);
+
+	return Plugin_Handled;
 }
 
 public void Hook_PlayerSpawn(Handle event, char[] name, bool dontBroadcast) {
@@ -117,35 +133,7 @@ public void Hook_PostInventoryApplication(Event event, char[] name, bool dontBro
     }
 }
 
-// public void TF2Items_OnGiveNamedItem_Post(int client, char[] classname, int itemDefinitionIndex, int itemLevel, int quality, int entity) {
-// 	if(gCreatedWeapons.FindValue(entity) > -1) {
-// 		PrintToServer("Ignoring plugin created weapon");
-// 		return;
-// 	}
-
-// 	DataPack pack = new DataPack();
-// 	pack.WriteCell(GetClientUserId(client));
-// 	pack.WriteString(classname);
-// 	pack.WriteCell(itemDefinitionIndex);
-// 	pack.WriteCell(itemLevel);
-// 	pack.WriteCell(quality);
-// 	pack.WriteCell(entity);
-
-// 	RequestFrame(Frame_UpdateItem, pack);
-// }
-
 public void UpdateItem(NamedItem item[NamedItem]) {
-	//NamedItem item[NamedItem];
-		// pack.Reset();
-
-	// item[NIClient] = GetClientOfUserId(pack.ReadCell());
-	// pack.ReadString(item[NIClassname], sizeof(item[NIClassname]));
-	// item[NIDefIndex] = pack.ReadCell();
-	// item[NILevel] = pack.ReadCell();
-	// item[NIQuality] = pack.ReadCell();
-	// item[NIEntity] = pack.ReadCell();
-
-
 	//Skip items that aren't equipped
 	int slot = GetWeaponSlot(item[NIClient], item[NIEntity]);
 
@@ -279,22 +267,22 @@ public void AustraliumFix(int entity) {
 }
 
 public void YearChanged(ConVar convar, char[] oldValue, char[] newValue) {
-	PrintToServer("%i", year.IntValue);
+	PrintToServer("%i", gCurrentYear.IntValue);
 
 	gBlockedQualities.Clear();
 	gBlockedAttributes.Clear();
 
-	if(year.IntValue < 2008) {
+	if(gCurrentYear.IntValue < 2008) {
 		gBlockedQualities.Push(6); //Unique
 		gBlockedAttributes.Push(142); //Paint
 	}
 
-	if(year.IntValue < 2010) {
+	if(gCurrentYear.IntValue < 2010) {
 		gBlockedQualities.Push(5); //Unusual
 		gBlockedQualities.Push(3); //Vintage
 	}
 
-	if(year.IntValue < 2011) {
+	if(gCurrentYear.IntValue < 2011) {
 		gBlockedQualities.Push(11); //Strange
 		gBlockedQualities.Push(13); //Haunted
 		gBlockedQualities.Push(1); //Genuine
@@ -304,7 +292,7 @@ public void YearChanged(ConVar convar, char[] oldValue, char[] newValue) {
 		gBlockedAttributes.Push(747); //Unusual effect
 	}
 	
-	if(year.IntValue < 2012) {
+	if(gCurrentYear.IntValue < 2012) {
 		gBlockedAttributes.Push(379); //Strange parts
 		gBlockedAttributes.Push(380); //Strange parts
 		gBlockedAttributes.Push(381); //Strange parts
@@ -314,19 +302,19 @@ public void YearChanged(ConVar convar, char[] oldValue, char[] newValue) {
 		gBlockedAttributes.Push(385); //Strange parts
 	}
 
-	if(year.IntValue < 2013) {
+	if(gCurrentYear.IntValue < 2013) {
 		gBlockedAttributes.Push(2013); //Killstreak 
 		gBlockedAttributes.Push(2014); //Killstreak Sheen
 		gBlockedAttributes.Push(2025); //Killstreak Tier
 		gBlockedAttributes.Push(2027); //Australium
 	}
 
-	if(year.IntValue < 2014) {
+	if(gCurrentYear.IntValue < 2014) {
 		gBlockedQualities.Push(14); //Collector's
 		gBlockedQualities.Push(750); //Unusual taunt
 	}
 
-	if(year.IntValue < 2015) {
+	if(gCurrentYear.IntValue < 2015) {
 		gBlockedQualities.Push(15); //Decorated
 		gBlockedAttributes.Push(725); //Skin wear
 		gBlockedAttributes.Push(2053); //Festivized
@@ -334,12 +322,13 @@ public void YearChanged(ConVar convar, char[] oldValue, char[] newValue) {
 	}
 
 	//War paints
-	if(year.IntValue < 2015) {
+	if(gCurrentYear.IntValue < 2017) {
 		gBlockedAttributes.Push(834);
 		gBlockedAttributes.Push(866);
 		gBlockedAttributes.Push(867);
 	}
 
+	//Date attributes that seem to break things
 	gBlockedAttributes.Push(143);
 	gBlockedAttributes.Push(185);
 	gBlockedAttributes.Push(211);
@@ -348,10 +337,17 @@ public void YearChanged(ConVar convar, char[] oldValue, char[] newValue) {
 	gBlockedAttributes.Push(751);
 	gBlockedAttributes.Push(2010);
 	gBlockedAttributes.Push(2011);
+
+	char whitelist[PLATFORM_MAX_PATH];
+	Format(whitelist, sizeof(whitelist), "cfg/whitelists/%d.txt", gCurrentYear.IntValue);
+	gMpTournamentWhitelist.SetString(whitelist);
+
+	ServerCommand("exec \"years/reset.cfg\"");
+	ServerCommand("exec \"years/%d.cfg\"", gCurrentYear.IntValue);
 }
 
 public Action Buildings_CanPlayerPickup(int client, int building, bool &result) {
-	if(year.IntValue < 2010) {
+	if(gCurrentYear.IntValue < 2010) {
 		result = false;
 
 		return Plugin_Changed;
@@ -374,23 +370,6 @@ stock int GetWeaponSlot(int client, int weapon) {
 
 	return -1;
 }
-
-// public int SpawnWeapon(int entity, const char[] name, ConfigWeapon configWeapon[ConfigWeapon], int client) {
-// 	float origin[3];
-// 	float angles[3];
-// 	char model[128];
-
-// 	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", origin);
-// 	GetEntPropVector(entity, Prop_Send, "m_angRotation", angles);  
-// 	GetEntPropString(entity, Prop_Data, "m_ModelName", model, 128);
-	
-// 	int weapon = CreateWeapon(client, configWeapon);
-// 	int dropped = CreateDroppedWeapon(weapon, client, origin, angles);
-
-// 	SetEntityMoveType(dropped, MOVETYPE_NONE);
-
-// 	return dropped;
-// }
 
 int CreateDroppedWeapon(int fromWeapon, int client, const float origin[3], const float angles[3]) {
 	// Offset of the CEconItemView class inlined on the weapon.
