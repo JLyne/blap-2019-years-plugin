@@ -112,7 +112,6 @@ public void Hook_PlayerSpawn(Handle event, char[] name, bool dontBroadcast) {
 }
 
 public void Hook_PostInventoryApplication(Event event, char[] name, bool dontBroadcast) {
-	PrintToChatAll("Dashoom");
 	int client = GetClientOfUserId(event.GetInt("userid"));
 
 	for(int slot = 0; slot < 8; slot++) {
