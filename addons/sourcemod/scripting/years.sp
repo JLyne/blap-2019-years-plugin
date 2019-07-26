@@ -174,72 +174,51 @@ public void UpdateItem(NamedItem item[NamedItem]) {
 	GetClientEyeAngles(item[NIClient], angles);
 	int dropped = CreateDroppedWeapon(created, item[NIClient], position, angles);
 
+
 	if(dropped == INVALID_ENT_REFERENCE) {
-		PrintToServer("CreateDroppedWeapon failed");
 		return;
 	}
 
-	PrintToServer("Dropped weapon created");
-
 	gCreatedWeapons.Push(dropped);
-
-	//Unequip invisible replaced item
-	// TF2_RemoveWeaponSlot(item[NIClient], slot);
-
-	PrintToServer("Initial replacement item unequipped");
 
 	//"Pick up" dropped weapon, which will be visible
 	SDKCall(hPickupWeaponFromOther, item[NIClient], dropped);
 
-	PrintToServer("Dropped weapon picked up");
-
-	PrintToServer("Done");
 	delete replacement;
 }
 
 stock Handle CreateReplacementItem(NamedItem item[NamedItem]) {
 	bool replace = false;
 
-	PrintToServer("Frame_UpdateItem");
-
 	if(gBlockedQualities.FindValue(item[NIQuality]) > -1) {
-		PrintToServer("Blocked quality %d found", item[NIQuality]);
 		item[NIQuality] = 6;
 		replace = true;
 	}
-
-	// PrintToServer("Trying TF2Attrib_GetSOCAttribs");
 
 	int attributes[16];
 	float attributeValues[16];
 	int attributeCount = TF2Attrib_GetSOCAttribs(item[NIEntity], attributes, attributeValues);
 	int allowedAttributeCount = 0;
-	
-	// PrintToServer("Checking attributes, count %d", attributeCount);
 
+	//Check for blocked attributes requiring item replacement
 	if(attributeCount != -1) {
 		for(int i = 0; i < attributeCount; i++) {
-			// PrintToServer("Checking attribute %d found, value %f", attributes[i], attributeValues[i]);
 			if(gBlockedAttributes.FindValue(attributes[i]) > -1) {
-				PrintToServer("Blocked attribute %d found, value %f", attributes[i], attributeValues[i]);
 				replace = true;
 			} else {
 				allowedAttributeCount++;
 			}
 		}
 	} else {
-		PrintToServer("Failed to get attributes");
 		replace = true;
 	}
 
 	if(!replace) {
 		return INVALID_HANDLE;
 	}
-
-	PrintToServer("Replacing weapon");
 	
+	//Create replacement
 	//FIXME: try to fix GiveNamedItem failing or crashing server (FORCE_GENERATION?)
-
 	Handle replacement = TF2Items_CreateItem(PRESERVE_ATTRIBUTES | OVERRIDE_ALL | FORCE_GENERATION);
 	TF2Items_SetQuality(replacement, item[NIQuality] ? item[NIQuality] : 6);
 	TF2Items_SetItemIndex(replacement, item[NIDefIndex]);
@@ -249,9 +228,9 @@ stock Handle CreateReplacementItem(NamedItem item[NamedItem]) {
 
 	int index = 0;
 
+	//Add allowed attributes to replacement
 	for(int i = 0; i < attributeCount; i++) {
 		if(gBlockedAttributes.FindValue(attributes[i]) == -1) {
-			PrintToServer("Adding attribute %d, value %f", attributes[i], attributeValues[i]);
 			TF2Items_SetAttribute(replacement, index, attributes[i], attributeValues[i]);
 			index++;
 		}
@@ -261,8 +240,6 @@ stock Handle CreateReplacementItem(NamedItem item[NamedItem]) {
 }
 
 public void YearChanged(ConVar convar, char[] oldValue, char[] newValue) {
-	PrintToServer("%i", gCurrentYear.IntValue);
-
 	gBlockedQualities.Clear();
 	gBlockedAttributes.Clear();
 
