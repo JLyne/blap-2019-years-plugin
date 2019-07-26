@@ -260,11 +260,6 @@ stock Handle CreateReplacementItem(NamedItem item[NamedItem]) {
 	return replacement;
 }
 
-public void AustraliumFix(int entity) {
-	SetVariantInt(1);
-	AcceptEntityInput(entity, "skin", entity, entity);
-}
-
 public void YearChanged(ConVar convar, char[] oldValue, char[] newValue) {
 	PrintToServer("%i", gCurrentYear.IntValue);
 
@@ -306,6 +301,8 @@ public void YearChanged(ConVar convar, char[] oldValue, char[] newValue) {
 		gBlockedAttributes.Push(2014); //Killstreak Sheen
 		gBlockedAttributes.Push(2025); //Killstreak Tier
 		gBlockedAttributes.Push(2027); //Australium
+		gBlockedAttributes.Push(2022); //Australium
+		gBlockedAttributes.Push(542); //Australium
 	}
 
 	if(gCurrentYear.IntValue < 2014) {
