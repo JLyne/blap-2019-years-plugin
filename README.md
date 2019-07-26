@@ -25,3 +25,9 @@ Plugin for blap "Legacy TF2" segment. A far from exhaustive but reasonable repre
 * TF2Items - Item replacement
 * TF2Attributes - Attribute checking
 * Buildings extension - Small extension to hook building pickups
+
+## Cvars
+ * `sm_current_year` - The current year
+ 
+## Commands
+ * `sm_year` - Sets the current year
